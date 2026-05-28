@@ -50,6 +50,50 @@ def getenv_dict(name: str, default: dict = None):
     return default
 
 
+def validate_datasource_parameters(value: str):
+    """
+    Validate DATASOURCE_PARAMETERS environment variable.
+
+    Ensures the value is a valid URI query string fragment used for
+    database connection configuration (e.g. authSource=cvedb).
+
+    Raises ValueError if invalid.
+    """
+    if not value:
+        return value
+
+    if value.startswith("?"):
+        raise ValueError(
+            "Invalid DATASOURCE_PARAMETERS: must not start with '?'. "
+            "Expected format: key=value&key=value"
+        )
+
+    pairs = value.split("&")
+
+    for pair in pairs:
+        if "=" not in pair:
+            raise ValueError(
+                "Invalid DATASOURCE_PARAMETERS: each entry must be in key=value format "
+                "(e.g. authSource=cvedb)"
+            )
+
+        key, val = pair.split("=", 1)
+
+        if not key:
+            raise ValueError(
+                "Invalid DATASOURCE_PARAMETERS: empty key detected "
+                "(expected key=value, e.g. authSource=cvedb)"
+            )
+
+        if not val:
+            raise ValueError(
+                f"Invalid DATASOURCE_PARAMETERS: '{key}' must have a value "
+                "(expected key=value, e.g. authSource=cvedb)"
+            )
+
+    return value
+
+
 class Configuration(object):
     """
     Class holding the configuration
@@ -84,7 +128,9 @@ class Configuration(object):
         quote_plus(DATASOURCE_PASSWORD) if DATASOURCE_PASSWORD else None
     )
     DATASOURCE_DBNAME = os.getenv("DATASOURCE_DBNAME", "cvedb")
-    DATASOURCE_PARAMETERS = os.getenv("DATASOURCE_PARAMETERS", None)
+    DATASOURCE_PARAMETERS = validate_datasource_parameters(
+        os.getenv("DATASOURCE_PARAMETERS", None)
+    )
 
     DATASOURCE_CONNECTION_DETAILS = None
 
