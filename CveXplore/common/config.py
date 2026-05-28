@@ -84,10 +84,11 @@ class Configuration(object):
         quote_plus(DATASOURCE_PASSWORD) if DATASOURCE_PASSWORD else None
     )
     DATASOURCE_DBNAME = os.getenv("DATASOURCE_DBNAME", "cvedb")
+    DATASOURCE_PARAMETERS = os.getenv("DATASOURCE_PARAMETERS", None)
 
     DATASOURCE_CONNECTION_DETAILS = None
 
-    DATASOURCE_HOST_URI = (
+    DATASOURCE_HOST_URI_BASE = (
         f"{DATASOURCE_PROTOCOL}"
         f"{'' if DATASOURCE_DBAPI is None else f'+{DATASOURCE_DBAPI}'}"
         f"://"
@@ -97,10 +98,22 @@ class Configuration(object):
         # must not be included here to avoid pymongo.errors.InvalidURI errors.
         f"{'' if DATASOURCE_DBAPI == 'srv' else f':{DATASOURCE_PORT}'}"
     )
+    DATASOURCE_HOST_URI_PARAMS = (
+        f"?{DATASOURCE_PARAMETERS}" if DATASOURCE_PARAMETERS else ""
+    )
+    # allows passing the host URI without database for a driver that takes it separately
+    DATASOURCE_HOST_URI = (
+        f"{DATASOURCE_HOST_URI_BASE}/{DATASOURCE_HOST_URI_PARAMS}"
+        if DATASOURCE_HOST_URI_PARAMS
+        else DATASOURCE_HOST_URI_BASE
+    )
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "SQLALCHEMY_DATABASE_URI",
-        (f"{DATASOURCE_HOST_URI}/{DATASOURCE_DBNAME}"),
+        (
+            f"{DATASOURCE_HOST_URI_BASE}/{DATASOURCE_DBNAME}"
+            f"{DATASOURCE_HOST_URI_PARAMS}"
+        ),
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = getenv_bool(
         "SQLALCHEMY_TRACK_MODIFICATIONS", "False"
